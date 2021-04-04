@@ -1,5 +1,5 @@
 {
-   "sf1_data_path":"/workdir/clever_investment_data/sf1",
-   "quandl_api_url":"https://www.quandl.com/api/v3",
-   "aa":null
+   "sf1_data_path":null,
+   "commodities_data_path":null,
+   "quandl_api_url":"https://www.quandl.com/api/v3"
 }

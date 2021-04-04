@@ -6,8 +6,8 @@ import copy
 from tqdm import tqdm
 from multiprocessing import Pool
 from itertools import repeat
-from utils import load_json, save_json
-
+from .utils import load_json, save_json
+from .data import SF1Data
 
 
 
@@ -71,11 +71,29 @@ class QuandlDownloader:
                         for k in range(0, len(ticker_list), batch_size)]
         p = Pool(n_jobs)
         for _ in tqdm(p.imap(self._batch_ticker_download, batches)):
-#        for batch in tqdm(batches):
-#            self._batch_ticker_download(batch)
+#         for batch in tqdm(batches):
+#             self._batch_ticker_download(batch)
             None
             
-            
+
+    def single_download(self, url, save_filepath):
+        if '?' not in url:
+            url = url + '?'
+        url = self._form_quandl_url(url)
+        for _ in range(10):
+            try:
+                response = requests.get(url)
+                break
+            except:
+                print(11)
+                time.sleep(np.random.uniform(0, 2))    
+        if response.status_code != 200:
+            print(12)
+        data = response.json()
+
+        save_json(save_filepath, data)
+    
+        
             
 class TinkoffDownloader:
     def __init__(self, secrets):
@@ -127,10 +145,28 @@ class TinkoffDownloader:
         
         return close_price
             
+        
 
+if __name__ == '__main__':
+    config = load_json("config.json")
+    secrets = load_json("secrets.json")  
 
+    data_loader = SF1Data(config['sf1_data_path'])
+    tickers_df = data_loader.load_base_data(
+        currency='USD',
+        scalemarketcap=['4 - Mid', '5 - Large', '6 - Mega'])
+    ticker_list = tickers_df['ticker'].unique().tolist()
 
+#     all_ticker_list = data_loader.load_base_data()['ticker'].unique().tolist()
 
+    downloader = QuandlDownloader(config, secrets, sleep_time=0.8)
+    downloader.ticker_download('datatables/SHARADAR/SF1?ticker={ticker}', ticker_list, 
+                               save_dirpath='{}/core_fundamental'.format(config['sf1_data_path']), 
+                               skip_exists=False,  batch_size=10, n_jobs=4)
+
+    downloader.ticker_download('datatables/SHARADAR/DAILY?ticker={ticker}', ticker_list, 
+                               save_dirpath='{}/daily'.format(config['sf1_data_path']), 
+                               skip_exists=False, batch_size=5, n_jobs=4)
 
 
 
